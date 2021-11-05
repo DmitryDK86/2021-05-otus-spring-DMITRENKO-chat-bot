@@ -1,0 +1,37 @@
+spring:
+  data:
+    mongodb:
+      port: 27017
+      host: localhost
+      database: googlechatbot
+
+bot:
+  credentials-path-env-property: service-acct.json
+  project-id: hdfsbot
+  subscription-id: chatbot_sub
+  google-chat-api-scope: 'https://www.googleapis.com/auth/chat.bot'
+  response-url-template: 'https://chat.googleapis.com/v1/__SPACE_ID__/messages'
+  response-added: 'Thank you for adding me!'
+  response-template: 'You said: `__MESSAGE__`'
+
+server:
+  port: 8088
+
+logging:
+  file:
+    name: "./chatbot.log"
+  level:
+    root: info
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ["health", "metrics", "logfile"]
+
+  endpoint:
+    beans:
+      cache:
+        time-to-live: 10s # Время, в течение которого конечная точка кэширует ответ
+    health:
+      show-details: always
