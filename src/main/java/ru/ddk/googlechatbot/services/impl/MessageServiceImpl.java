@@ -1,6 +1,8 @@
 package ru.ddk.googlechatbot.services.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +19,7 @@ import java.util.List;
 public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
-
+    private static final Logger logger = LoggerFactory.getLogger(MessageServiceImpl.class.getName());
     public MessageServiceImpl(MessageRepository messageRepository) {
         this.messageRepository = messageRepository;
     }

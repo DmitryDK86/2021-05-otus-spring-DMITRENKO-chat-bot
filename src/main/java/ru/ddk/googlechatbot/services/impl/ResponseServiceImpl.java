@@ -103,16 +103,23 @@ public class ResponseServiceImpl implements ResponseService {
                                 return Mono.just(message);
                             }
 
-                            if (copyService.copyFile(message.getInputValue().split(",")[0], message.getInputValue().split(",")[1])) {
-                                message.setStatus("C");
-                            } else {
+                            try {
+                                if (copyService.copyFile(message.getInputValue().split(",")[0], message.getInputValue().split(",")[1])) {
+                                    message.setStatus("C");
+                                } else {
+                                    message.setStatus("F");
+                                }
+                            }catch (Exception e)
+                            {
                                 message.setStatus("F");
+                                message.setInputValue(e.getMessage());
                             }
                             return messageService.save(message);
                         })
+                        .log()
                         .subscribe(r ->
                                 {
-                                    responseNode.put("text", StatusValue.valueOf(r.getStatus()).getText() + " " + r.getInputValue());
+                                    responseNode.put("text", formatAnswer(r.getInputValue(), r.getStatus()));
                                     try {
                                         postResponse(eventJson, responseNode);
                                     } catch (IOException e) {
@@ -122,7 +129,7 @@ public class ResponseServiceImpl implements ResponseService {
                         );
 
                 // clear db
-                messageService.deleteAllByStatusNot("W").log().subscribe();
+                //messageService.deleteAllByStatusNot("W").log().subscribe();
             }
         } catch (Exception e) {
             logger.error(String.valueOf(e));
@@ -130,4 +137,21 @@ public class ResponseServiceImpl implements ResponseService {
             postResponse(eventJson, responseNode);
         }
     }
+
+    private String formatAnswer(String message, String status)
+    {
+        switch (status){
+            case "C":
+            case "B":
+            case "W":
+                message = String.format("```\n %s \n %s \n```",StatusValue.valueOf(status).getText(), message.replace(",", " -> "));
+                break;
+            default:
+                message = String.format("``` %s \n %s ```",StatusValue.valueOf(status).getText(), message);
+                break;
+        }
+
+        return message;
+    }
+
 }
