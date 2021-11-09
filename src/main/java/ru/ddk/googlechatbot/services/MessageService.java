@@ -20,5 +20,5 @@ public interface MessageService {
 
     Mono<Boolean> existsByInputValueAndStatus(String inputValue, String status);
 
-    Flux<Message> returnTasksSave(List<String> pathList, JsonNode eventJson);
+    Flux<Message> saveNewMessages(List<Message> messageList);
 }

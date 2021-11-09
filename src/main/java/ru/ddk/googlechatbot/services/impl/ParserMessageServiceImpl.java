@@ -28,13 +28,25 @@ public class ParserMessageServiceImpl implements ParserMessageService {
                             "2. /path1/path2/cdm/samplesubject/vr=1/dt=2021-06-01" +
                             " /path4/path5/cdm/samplesubject/vr=2/dt=2021-06-01 -> /path3/target"));}});
         }
+        else if(Pattern.compile("^/file_info.*").matcher(input).matches())
+        {
+            List<String> rezultConvert = convertToPathInfo(input);
+            if (!rezultConvert.isEmpty())
+            {
+                HashMap<String, String> infoMap = new HashMap<>(){{
+                    put("value", String.format("%s", "Принято"));
+                }};
+                rezultConvert.forEach(convertPath -> infoMap.put(String.valueOf(infoMap.size()), convertPath));
+                return Pair.with("file_info", infoMap);
+            }
+        }
         else if(input.contains("->"))
         {
-            List<String> rezultConvert = convertToPath(input);
+            List<String> rezultConvert = convertToPathCopy(input);
             if (!rezultConvert.isEmpty())
             {
                 HashMap<String, String> copyMap = new HashMap<>(){{
-                    put("value", String.format("%s", "Бегу копировать"));
+                    put("value", String.format("%s", "Принято"));
                 }};
                 rezultConvert.forEach(convertPath -> copyMap.put(String.valueOf(copyMap.size()), convertPath));
                 return Pair.with("copy", copyMap);
@@ -46,7 +58,7 @@ public class ParserMessageServiceImpl implements ParserMessageService {
                 " через команду /help можно посмотреть, что я умею ", input)); }});
     }
 
-    private List<String> convertToPath(String input)
+    private List<String> convertToPathCopy(String input)
     {
         List<String> rezult = new ArrayList<>();
 
@@ -64,6 +76,25 @@ public class ParserMessageServiceImpl implements ParserMessageService {
                         rezult.add(String.format("%s,%s%s", path, splitInput.get(spPos + 1), path).replace("//", "/"))
                 );
             }
+        }catch (Exception e)
+        {
+            logger.error(e.toString());
+        }
+        return rezult;
+    }
+
+    private List<String> convertToPathInfo(String input)
+    {
+        List<String> rezult = new ArrayList<>();
+        input = input.replaceFirst("^/file_info", "");
+
+        try {
+            rezult = List.of(input.split("[\\s]"));
+            rezult = rezult.stream().filter(this::isValidPath)
+                    .map(filePath -> filePath.replaceAll("[\\s]+",""))
+                    .collect(Collectors.toList());
+            logger.info(rezult.toString());
+            return rezult;
         }catch (Exception e)
         {
             logger.error(e.toString());

@@ -8,18 +8,14 @@ import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 import ru.ddk.googlechatbot.config.BotConfig;
+import ru.ddk.googlechatbot.domain.Message;
 import ru.ddk.googlechatbot.enumerable.StatusValue;
-import ru.ddk.googlechatbot.services.CopyService;
-import ru.ddk.googlechatbot.services.MessageService;
-import ru.ddk.googlechatbot.services.ParserMessageService;
-import ru.ddk.googlechatbot.services.ResponseService;
+import ru.ddk.googlechatbot.services.*;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,15 +25,13 @@ public class ResponseServiceImpl implements ResponseService {
     private final BotConfig botConfig;
     private final HttpRequestFactory requestFactory;
     private final ParserMessageService parserMessageService;
-    private final CopyService copyService;
-    private final MessageService messageService;
+    private final CommandService commandService;
 
-    public ResponseServiceImpl(BotConfig botConfig, HttpRequestFactory requestFactory, ParserMessageService parserMessageService, CopyService copyService, MessageService messageService) {
+    public ResponseServiceImpl(BotConfig botConfig, HttpRequestFactory requestFactory, ParserMessageService parserMessageService, CommandService commandService) {
         this.botConfig = botConfig;
         this.requestFactory = requestFactory;
         this.parserMessageService = parserMessageService;
-        this.copyService = copyService;
-        this.messageService = messageService;
+        this.commandService = commandService;
     }
 
     @Override
@@ -89,44 +83,42 @@ public class ResponseServiceImpl implements ResponseService {
             responseNode.put("text", parseMessage.getValue1().get("value"));
             postResponse(eventJson, responseNode);
 
-            if (parseMessage.getValue0().contains("copy")) {
-                List<String> pathList = parseMessage.getValue1().entrySet()
+            if (parseMessage.getValue0().contains("copy") || parseMessage.getValue0().contains("file_info")) {
+                List<Message> messageList = parseMessage.getValue1().entrySet()
                         .stream().filter(m -> !m.getKey().contains("value"))
-                        .map(Map.Entry::getValue)
+                        .map(pathMap -> new Message(new HashMap<>() {{put("metadata", eventJson);}}, pathMap.getValue(), "W"))
                         .collect(Collectors.toList());
 
-                // save new message and start copy
-                messageService
-                        .returnTasksSave(pathList, eventJson)
-                        .flatMap(message -> {
-                            if (message.getStatus().equals("B")) {
-                                return Mono.just(message);
-                            }
-
-                            try {
-                                if (copyService.copyFile(message.getInputValue().split(",")[0], message.getInputValue().split(",")[1])) {
-                                    message.setStatus("C");
-                                } else {
-                                    message.setStatus("F");
-                                }
-                            }catch (Exception e)
-                            {
-                                message.setStatus("F");
-                                message.setInputValue(e.getMessage());
-                            }
-                            return messageService.save(message);
-                        })
-                        .log()
-                        .subscribe(r ->
-                                {
-                                    responseNode.put("text", formatAnswer(r.getInputValue(), r.getStatus()));
-                                    try {
-                                        postResponse(eventJson, responseNode);
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
+                if(parseMessage.getValue0().contains("copy")) {
+                    commandService.copyFile(messageList)
+                            .subscribe(r ->
+                                    {
+                                        responseNode.put("text", formatAnswer(r.getInputValue(), r.getStatus()));
+                                        try {
+                                            postResponse(eventJson, responseNode);
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
                                     }
-                                }
-                        );
+                            );
+                }
+
+                if(parseMessage.getValue0().contains("file_info")) {
+                    commandService.getInfoFile(messageList)
+                            .subscribe(r ->
+                                    {
+                                        responseNode.put("text", formatAnswer(
+                                                String.format("%s %s",
+                                                r.keySet().stream().findFirst().orElse("error_key"),
+                                                r.values().stream().findFirst().orElse("error_value")) , "C"));
+                                        try {
+                                            postResponse(eventJson, responseNode);
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                            );
+                }
 
                 // clear db
                 //messageService.deleteAllByStatusNot("W").log().subscribe();
@@ -144,10 +136,13 @@ public class ResponseServiceImpl implements ResponseService {
             case "C":
             case "B":
             case "W":
-                message = String.format("```\n %s \n %s \n```",StatusValue.valueOf(status).getText(), message.replace(",", " -> "));
+                message = String.format("```\n %s \n %s \n```", StatusValue.valueOf(status).getText(), message.replace(",", " -> "));
+                break;
+            case "F":
+                message = String.format("``` %s \n %s ```", StatusValue.valueOf(status).getText(), message);
                 break;
             default:
-                message = String.format("``` %s \n %s ```",StatusValue.valueOf(status).getText(), message);
+                message = String.format("``` %s ```", message);
                 break;
         }
 

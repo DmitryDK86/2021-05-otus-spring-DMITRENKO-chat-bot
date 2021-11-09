@@ -20,6 +20,7 @@ public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
     private static final Logger logger = LoggerFactory.getLogger(MessageServiceImpl.class.getName());
+
     public MessageServiceImpl(MessageRepository messageRepository) {
         this.messageRepository = messageRepository;
     }
@@ -59,12 +60,15 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public Flux<Message> returnTasksSave(List<String> pathList, JsonNode eventJson) {
-        return Flux.fromIterable(pathList)
-                .flatMap(path -> existsByInputValueAndStatus(path, "W")
+    public Flux<Message> saveNewMessages(List<Message> messageList) {
+        return Flux.fromIterable(messageList)
+                .flatMap(msg -> existsByInputValueAndStatus(msg.getInputValue(), "W")
                         .flatMap(isProgress -> {
-                            return isProgress ? Mono.just(new Message(new HashMap<>() {{put("metadata", eventJson);}}, path, "B")) :
-                                    save(new Message(new HashMap<>() {{put("metadata", eventJson);}}, path, "W"));
+                            if (isProgress) {
+                                msg.setStatus("B");
+                                return Mono.just(msg);
+                            } else
+                                return save(msg);
                         })
                 )
                 .log();
