@@ -6,7 +6,7 @@ spring:
       database: googlechatbot
 
 bot:
-  credentials-path-env-property: service-acct.json
+  credentials-path-env-property: /service-acct.json
   project-id: hdfsbot
   subscription-id: chatbot_sub
   google-chat-api-scope: 'https://www.googleapis.com/auth/chat.bot'
