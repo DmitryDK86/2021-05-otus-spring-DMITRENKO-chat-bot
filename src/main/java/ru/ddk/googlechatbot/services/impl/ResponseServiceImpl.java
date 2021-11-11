@@ -108,9 +108,7 @@ public class ResponseServiceImpl implements ResponseService {
                             .subscribe(r ->
                                     {
                                         responseNode.put("text", formatAnswer(
-                                                String.format("%s %s",
-                                                r.keySet().stream().findFirst().orElse("error_key"),
-                                                r.values().stream().findFirst().orElse("error_value")) , "C"));
+                                                r.values().stream().findFirst().orElse("error_value") , "C"));
                                         try {
                                             postResponse(eventJson, responseNode);
                                         } catch (IOException e) {

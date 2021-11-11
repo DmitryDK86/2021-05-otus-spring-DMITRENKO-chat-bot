@@ -4,7 +4,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.ddk.googlechatbot.services.FileService;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -32,9 +34,19 @@ public class FileServiceImpl implements FileService {
     @Override
     public String getFileInfo(String pathFile) {
         try {
+            logger.info(String.format("%s%s", commandFileSize, pathFile));
             Process process = Runtime.getRuntime().exec(String.format("%s%s", commandFileSize, pathFile));
-            Scanner result = new Scanner(process.getInputStream());
-            return result.toString();
+            BufferedReader stdInput = new BufferedReader(new
+                    InputStreamReader(process.getInputStream()));
+            BufferedReader stdError = new BufferedReader(new
+                    InputStreamReader(process.getErrorStream()));
+            String result = "";
+            if((result = stdError.readLine()) != null)
+            {
+                logger.error(result);
+            }
+            result = stdInput.readLine();
+            return result;
 
         } catch (Exception e)
         {

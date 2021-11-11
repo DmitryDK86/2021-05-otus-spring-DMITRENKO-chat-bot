@@ -48,7 +48,7 @@ public class ParserMessageServiceImplTest {
         String input = "/file_info /path1 path2/cdm/samplesubject/vr=1/dt=2021-06-01  \n" +
                 " path1/path2/cdm/samplesubject/vr=2/dt=2021-06-01  \n" +
                 " /path1/path2/cdm/weightcubeobjectweightvalue/vr    \n" +
-                " /path1/path2/cdm/dailysubjectpropertyvalue/vr=4/rd=2021-06-01  \n" +
+                " /path1/path2/cd-m/dailysubjectpropertyvalue/vr=4/rd=2021-06-01  \n" +
                 " /path1/path2/cdm/dailysubjectpropertyvalue/vr=5/rd=2021-06-01  \n" +
                 " /path1/path2/dds/property/vr";
 

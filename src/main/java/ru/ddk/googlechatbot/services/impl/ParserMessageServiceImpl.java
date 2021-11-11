@@ -104,6 +104,6 @@ public class ParserMessageServiceImpl implements ParserMessageService {
 
     private boolean isValidPath(String path)
     {
-        return Pattern.compile("(^\\/[\\/\\w]+(=)).*").matcher(path).matches();
+        return Pattern.compile("(^\\/[\\/\\w-]+(=)).*").matcher(path).matches();
     }
 }
