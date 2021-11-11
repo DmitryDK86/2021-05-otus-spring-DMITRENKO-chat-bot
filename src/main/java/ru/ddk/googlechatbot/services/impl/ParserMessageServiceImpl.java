@@ -28,7 +28,7 @@ public class ParserMessageServiceImpl implements ParserMessageService {
                             "2. /path1/path2/cdm/samplesubject/vr=1/dt=2021-06-01" +
                             " /path4/path5/cdm/samplesubject/vr=2/dt=2021-06-01 -> /path3/target"));}});
         }
-        else if(Pattern.compile("^/file_info.*").matcher(input).matches())
+        else if(Pattern.compile("^/file_info").matcher(input).find())
         {
             List<String> rezultConvert = convertToPathInfo(input);
             if (!rezultConvert.isEmpty())
